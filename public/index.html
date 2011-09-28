@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+<title>webfiddler</title>
+<link rel="stylesheet" type="text/css" href="/css/style.css" />
+<link rel="stylesheet" type="text/css" href="/css/slick.grid.css" />
+<link rel="stylesheet" type="text/css" href="/css/slick.columnpicker.css" />
+<link rel="stylesheet" type="text/css" href="/css/smoothness/jquery-ui-1.8.5.custom.css" />
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/jquery-1.6.4.min.js"></script>
+<script src="/js/jquery.event.drag-2.0.min.js"></script>
+<script src="/js/jquery-ui-1.8.16.custom.min.js"></script>
+<script src="/js/slick.core.js"></script>
+<script src="/js/slick.grid.js"></script>
+<script src="/js/slick.columnpicker.js"></script>
+<script>
+var socket = io.connect();
+$(function() {
+  var i = 0;
+  var data = []; //TODO: autopopulate with cached data -> requires backend datastore
+  var options = {};
+  var columns = [
+    {id:"num", name:"#", field:"index", width:40, sortable:true},
+    {id:"time", name:"Time", field:"time", formatter: function(row, cell, value, columnDef, dataContext){ return new Date(value).toLocaleTimeString(); }, width: 120, sortable:true},
+    {id:"client", name:"Client IP", field:"client", width: 120, sortable:true},
+    {id:"host", name:"Host", field:"host", width: 300, sortable:true},
+    {id:"path", name:"Path", field:"path", width: 400}
+  ];
+  var grid = new Slick.Grid("#requestsGrid", data, columns, options);
+  grid.onSort.subscribe(function(e, args) {
+    console.log(e, args);
+    var sortdir = args.sortAsc ? 1 : -1
+    var sortcol = args.sortCol.field;
+    data.sort(function(a,b) {
+      if (a[sortcol] < b[sortcol]) return -1 * sortdir;
+      if (a[sortcol] > b[sortcol]) return sortdir;
+      return 0;
+    });
+    grid.invalidate();
+    grid.render();
+  });
+  var columnpicker = new Slick.Controls.ColumnPicker(columns, grid, options);
+  socket.on('proxiedrequest',function(request) {  
+    data.push({index: ++i, time: request.time, client: request.client, host: request.url.hostname, path: request.url.pathname});
+    grid.invalidateRow(i);
+    grid.render();
+    //TODO: resort 
+  });
+});
+socket.on('proxiedrequest',function(request) {
+  $(function() {
+
+  });
+  console.log('proxiedrequest', request);
+  $("#requestsTable tbody").prepend("<tr><td>"+request.time+"</td><td>"+request.client+"</td><td>"+request.url.hostname+"</td><td>"+request.url.pathname+(request.url.search||"")+"</td></tr>");
+});
+</script>
+</head>
+<body>
+<header>
+<h1>webfiddler</h1>
+</header>
+<section id="requests">
+<header>
+<h2>Requests</h2>
+</header>
+<div id="requestsGrid" style="height:500px">
+</section>
+</body>
+</html>
