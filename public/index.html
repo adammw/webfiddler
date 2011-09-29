@@ -1,70 +1,182 @@
 <!doctype html>
 <html>
 <head>
-<title>webfiddler</title>
-<link rel="stylesheet" type="text/css" href="/css/style.css" />
-<link rel="stylesheet" type="text/css" href="/css/slick.grid.css" />
-<link rel="stylesheet" type="text/css" href="/css/slick.columnpicker.css" />
-<link rel="stylesheet" type="text/css" href="/css/smoothness/jquery-ui-1.8.5.custom.css" />
-<script src="/socket.io/socket.io.js"></script>
-<script src="/js/jquery-1.6.4.min.js"></script>
-<script src="/js/jquery.event.drag-2.0.min.js"></script>
-<script src="/js/jquery-ui-1.8.16.custom.min.js"></script>
-<script src="/js/slick.core.js"></script>
-<script src="/js/slick.grid.js"></script>
-<script src="/js/slick.columnpicker.js"></script>
-<script>
-var socket = io.connect();
-$(function() {
-  var i = 0;
-  var data = []; //TODO: autopopulate with cached data -> requires backend datastore
-  var options = {};
-  var columns = [
-    {id:"num", name:"#", field:"index", width:40, sortable:true},
-    {id:"time", name:"Time", field:"time", formatter: function(row, cell, value, columnDef, dataContext){ return new Date(value).toLocaleTimeString(); }, width: 120, sortable:true},
-    {id:"client", name:"Client IP", field:"client", width: 120, sortable:true},
-    {id:"host", name:"Host", field:"host", width: 300, sortable:true},
-    {id:"path", name:"Path", field:"path", width: 400}
-  ];
-  var grid = new Slick.Grid("#requestsGrid", data, columns, options);
-  grid.onSort.subscribe(function(e, args) {
-    console.log(e, args);
-    var sortdir = args.sortAsc ? 1 : -1
-    var sortcol = args.sortCol.field;
-    data.sort(function(a,b) {
-      if (a[sortcol] < b[sortcol]) return -1 * sortdir;
-      if (a[sortcol] > b[sortcol]) return sortdir;
-      return 0;
-    });
-    grid.invalidate();
-    grid.render();
-  });
-  var columnpicker = new Slick.Controls.ColumnPicker(columns, grid, options);
-  socket.on('proxiedrequest',function(request) {  
-    data.push({index: ++i, time: request.time, client: request.client, host: request.url.hostname, path: request.url.pathname});
-    grid.invalidateRow(i);
-    grid.render();
-    //TODO: resort 
-  });
-});
-socket.on('proxiedrequest',function(request) {
-  $(function() {
-
-  });
-  console.log('proxiedrequest', request);
-  $("#requestsTable tbody").prepend("<tr><td>"+request.time+"</td><td>"+request.client+"</td><td>"+request.url.hostname+"</td><td>"+request.url.pathname+(request.url.search||"")+"</td></tr>");
-});
-</script>
+  <title>webfiddler</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <base href="/js/inspector/" />
+  <link rel="stylesheet" type="text/css" href="/css/style.css" />
+  <link rel="stylesheet" type="text/css" href="/js/inspector/audits.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/dataGrid.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/goToLineDialog.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/heapProfiler.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/inspector.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/inspectorCommon.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/inspectorSyntaxHighlight.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/networkPanel.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/helpScreen.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/popover.css">
+  <link rel="stylesheet" type="text/css" href="/js/inspector/textViewer.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/jquery-1.6.4.min.js"></script>
+  <script type="text/javascript" src="/js/inspector/utilities.js"></script>
+  <script type="text/javascript" src="/js/inspector/BinarySearch.js"></script>
+  <script type="text/javascript" src="/js/inspector/treeoutline.js"></script>
+  <script type="text/javascript" src="/js/inspector.js"></script>
+  <script type="text/javascript" src="/js/inspector/InspectorBackendStub.js"></script>
+  <script type="text/javascript" src="/js/inspector/InspectorFrontendHostStub.js"></script>
+  <script type="text/javascript" src="/js/inspector/ExtensionRegistryStub.js"></script>
+  <script type="text/javascript" src="/js/inspector/Object.js"></script>
+  <script type="text/javascript" src="/js/inspector/Settings.js"></script>
+  <script type="text/javascript" src="/js/inspector/Checkbox.js"></script>
+  <script type="text/javascript" src="/js/inspector/ContextMenu.js"></script>
+  <script type="text/javascript" src="/js/inspector/SoftContextMenu.js"></script>
+  <script type="text/javascript" src="/js/inspector/KeyboardShortcut.js"></script>
+  <script type="text/javascript" src="/js/inspector/TextPrompt.js"></script>
+  <script type="text/javascript" src="/js/inspector/Popover.js"></script>
+  <script type="text/javascript" src="/js/inspector/Placard.js"></script>
+  <script type="text/javascript" src="/js/inspector/View.js"></script>
+  <script type="text/javascript" src="/js/inspector/TabbedPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/IFrameView.js"></script>
+  <script type="text/javascript" src="/js/inspector/Drawer.js"></script>
+  <script type="text/javascript" src="/js/inspector/ConsoleMessage.js"></script>
+  <script type="text/javascript" src="/js/inspector/ConsoleModel.js"></script>
+  <script type="text/javascript" src="/js/inspector/ConsoleView.js"></script>
+  <script type="text/javascript" src="/js/inspector/Panel.js"></script>
+  <script type="text/javascript" src="/js/inspector/TimelineGrid.js"></script>    
+  <script type="text/javascript" src="/js/inspector/Resource.js"></script>
+  <script type="text/javascript" src="/js/inspector/CSSStyleModel.js"></script>
+  <script type="text/javascript" src="/js/inspector/NetworkManager.js"></script>
+  <script type="text/javascript" src="/js/inspector/NetworkLog.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceTreeModel.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceCategory.js"></script>
+  <script type="text/javascript" src="/js/inspector/TimelineManager.js"></script>
+  <script type="text/javascript" src="/js/inspector/Database.js"></script>
+  <script type="text/javascript" src="/js/inspector/DOMStorage.js"></script>
+  <script type="text/javascript" src="/js/inspector/DOMStorageItemsView.js"></script>
+  <script type="text/javascript" src="/js/inspector/DataGrid.js"></script>
+  <script type="text/javascript" src="/js/inspector/ShowMoreDataGridNode.js"></script>
+  <script type="text/javascript" src="/js/inspector/CookiesTable.js"></script>
+  <script type="text/javascript" src="/js/inspector/CookieItemsView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ApplicationCacheItemsView.js"></script>
+  <script type="text/javascript" src="/js/inspector/Script.js"></script>
+  <script type="text/javascript" src="/js/inspector/SidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/ElementsTreeOutline.js"></script>
+  <script type="text/javascript" src="/js/inspector/SidebarTreeElement.js"></script>
+  <script type="text/javascript" src="/js/inspector/Section.js"></script>
+  <script type="text/javascript" src="/js/inspector/PropertiesSection.js"></script>
+  <script type="text/javascript" src="/js/inspector/RemoteObject.js"></script>
+  <script type="text/javascript" src="/js/inspector/ObjectPropertiesSection.js"></script>
+  <script type="text/javascript" src="/js/inspector/BreakpointsSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/DOMBreakpointsSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/CallStackSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/ScopeChainSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/WatchExpressionsSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/WorkersSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/MetricsSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/PropertiesSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/EventListenersSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/Color.js"></script>
+  <script type="text/javascript" src="/js/inspector/CSSCompletions.js"></script>
+  <script type="text/javascript" src="/js/inspector/CSSKeywordCompletions.js"></script>
+  <script type="text/javascript" src="/js/inspector/StylesSidebarPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/PanelEnablerView.js"></script>
+  <script type="text/javascript" src="/js/inspector/WelcomeView.js"></script>
+  <script type="text/javascript" src="/js/inspector/StatusBarButton.js"></script>
+  <script type="text/javascript" src="/js/inspector/ElementsPanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/NetworkPanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/InjectedFakeWorker.js"></script>
+  <script type="text/javascript" src="/js/inspector/TextViewer.js"></script>
+  <script type="text/javascript" src="/js/inspector/SourceFrame.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ScriptsPanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourcesPanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/ProfilesPanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/ConsolePanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/ExtensionAPI.js"></script>
+  <script type="text/javascript" src="/js/inspector/ExtensionAuditCategory.js"></script>
+  <script type="text/javascript" src="/js/inspector/ExtensionCommon.js"></script>
+  <script type="text/javascript" src="/js/inspector/ExtensionServer.js"></script>
+  <script type="text/javascript" src="/js/inspector/ExtensionPanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/AuditsPanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/AuditResultView.js"></script>
+  <script type="text/javascript" src="/js/inspector/AuditLauncherView.js"></script>
+  <script type="text/javascript" src="/js/inspector/AuditRules.js"></script>
+  <script type="text/javascript" src="/js/inspector/AuditCategories.js"></script>
+  <script type="text/javascript" src="/js/inspector/AuditFormatters.js"></script>
+  <script type="text/javascript" src="/js/inspector/NetworkItemView.js"></script>
+  <script type="text/javascript" src="/js/inspector/EmptyView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceHeadersView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceCookiesView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceTimingView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceJSONView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceHTMLView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourceResponseView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ResourcePreviewView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ScriptFormatter.js"></script>
+  <script type="text/javascript" src="/js/inspector/DOMSyntaxHighlighter.js"></script>
+  <script type="text/javascript" src="/js/inspector/TextEditorModel.js"></script>
+  <script type="text/javascript" src="/js/inspector/TextEditorHighlighter.js"></script>
+  <script type="text/javascript" src="/js/inspector/SourceTokenizer.js"></script>
+  <script type="text/javascript" src="/js/inspector/SourceCSSTokenizer.js"></script>
+  <script type="text/javascript" src="/js/inspector/SourceHTMLTokenizer.js"></script>
+  <script type="text/javascript" src="/js/inspector/SourceJavaScriptTokenizer.js"></script>
+  <script type="text/javascript" src="/js/inspector/FontView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ImageView.js"></script>
+  <script type="text/javascript" src="/js/inspector/DatabaseTableView.js"></script>
+  <script type="text/javascript" src="/js/inspector/DatabaseQueryView.js"></script>
+  <script type="text/javascript" src="/js/inspector/ProfileDataGridTree.js"></script>
+  <script type="text/javascript" src="/js/inspector/BottomUpProfileDataGridTree.js"></script>
+  <script type="text/javascript" src="/js/inspector/TopDownProfileDataGridTree.js"></script>
+  <script type="text/javascript" src="/js/inspector/ProfileView.js"></script>
+  <script type="text/javascript" src="/js/inspector/PartialQuickSort.js"></script>
+  <script type="text/javascript" src="/js/inspector/HeapSnapshot.js"></script>
+  <script type="text/javascript" src="/js/inspector/HeapSnapshotProxy.js"></script>
+  <script type="text/javascript" src="/js/inspector/HeapSnapshotWorkerDispatcher.js"></script>
+  <script type="text/javascript" src="/js/inspector/DetailedHeapshotGridNodes.js"></script>
+  <script type="text/javascript" src="/js/inspector/DetailedHeapshotView.js"></script>
+  <script type="text/javascript" src="/js/inspector/DebuggerModel.js"></script>
+  <script type="text/javascript" src="/js/inspector/DebuggerPresentationModel.js"></script>
+  <script type="text/javascript" src="/js/inspector/BreakpointManager.js"></script>
+  <script type="text/javascript" src="/js/inspector/UISourceCode.js"></script>
+  <script type="text/javascript" src="/js/inspector/SourceFile.js"></script>
+  <script type="text/javascript" src="/js/inspector/CompilerSourceMapping.js"></script>
+  <script type="text/javascript" src="/js/inspector/DOMAgent.js"></script>
+  <script type="text/javascript" src="/js/inspector/TimelineAgent.js"></script>
+  <script type="text/javascript" src="/js/inspector/TimelinePanel.js"></script>
+  <script type="text/javascript" src="/js/inspector/TimelineOverviewPane.js"></script>
+  <script type="text/javascript" src="/js/inspector/TestController.js"></script>
+  <script type="text/javascript" src="/js/inspector/HelpScreen.js"></script>
+  <script type="text/javascript" src="/js/inspector/GoToLineDialog.js"></script>
+  <script type="text/javascript" src="/js/inspector/SettingsScreen.js"></script>
+  <script type="text/javascript" src="/js/inspector/ShortcutsScreen.js"></script>
+  <script type="text/javascript" src="/js/inspector/HAREntry.js"></script>
+  <script type="text/javascript" src="/js/inspector/CookieParser.js"></script>
+  <script type="text/javascript" src="/js/inspector/Toolbar.js"></script>
+  <script type="text/javascript" src="/js/inspector/SearchController.js"></script>
+  <script type="text/javascript" src="/js/inspector/WorkerManager.js"></script>
+  <script type="text/javascript" src="/js/inspector/UserMetrics.js"></script>
+  <script type="text/javascript" src="/js/inspector/JavaScriptContextManager.js"></script>
+  <script>
+    
+  </script>
 </head>
-<body>
-<header>
-<h1>webfiddler</h1>
-</header>
-<section id="requests">
-<header>
-<h2>Requests</h2>
-</header>
-<div id="requestsGrid" style="height:500px">
-</section>
+<body class="detached">
+    <div id="toolbar">
+        <div class="toolbar-item close-left"><button id="close-button-left"></button></div>
+        <div id="toolbar-controls">
+            <div class="toolbar-item"><button id="toolbar-dropdown-arrow" class="toolbar-label">&raquo;</button></div>
+            <div class="toolbar-item hidden" id="search-results-matches"></div>
+            <div class="toolbar-item toolbar-search-item"><input id="search" type="search" incremental results="0"><div id="search-toolbar-label" class="toolbar-label"></div></div>
+            <div class="toolbar-item close-right"><button id="close-button-right"></button></div>
+        </div>
+    </div>
+    <div id="main">
+        <div id="main-panels" spellcheck="false"></div>
+        <div id="main-status-bar" class="status-bar"><div id="anchored-status-bar-items"><div id="counters"><div id="error-warning-count" class="hidden"></div></div></div></div>
+    </div>
+    <div id="drawer">
+        <div id="console-view"><div id="console-messages" class="monospace"><div id="console-prompt" spellcheck="false"><br></div></div></div>
+        <div id="drawer-status-bar" class="status-bar"><div id="other-drawer-status-bar-items"><button id="clear-console-status-bar-item" class="status-bar-item clear-status-bar-item"><div class="glyph"></div><div class="glyph shadow"></div></button><select id="console-context" class="status-bar-item"></select><div id="console-filter" class="scope-bar status-bar-item"></div></div></div>
+    </div>
 </body>
 </html>

@@ -26,8 +26,14 @@ var webfiddlerServer = connect.createServer(
 var io = ioListen(webfiddlerServer);
 
 var httpProxy = new HttpProxy();
-httpProxy.on('proxiedrequest', function(request) {
-    io.sockets.emit('proxiedrequest', request);
+httpProxy.on('requestWillBeSent', function(data) {
+    io.sockets.send(JSON.stringify({method: "Network.requestWillBeSent", params: data}));
+});
+httpProxy.on('responseReceived', function(data) {
+    io.sockets.send(JSON.stringify({method: "Network.responseReceived", params: data}));
+});
+httpProxy.on('loadingFinished', function(data) {
+    io.sockets.send(JSON.stringify({method: "Network.loadingFinished", params: data}));
 });
 
 var proxyServer = connect.createServer(
