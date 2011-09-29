@@ -1,0 +1,4 @@
+[submodule "lib/connect"]
+	path = lib/connect
+	url = git@github.com:adammw/connect.git
+        url = git://github.com/adammw/webfiddler.git
