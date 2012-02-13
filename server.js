@@ -23,7 +23,32 @@ var webfiddlerServer = connect.createServer(
         res.end('404 Not Found');
     }
 );
+
+
 var io = ioListen(webfiddlerServer);
+
+var cannedResponses = {
+    'Profiler.hasHeapProfiler': false,
+    'Network.enable': true,
+    'Page.enable': false,
+    'CSS.enable': false,
+    'Console.enable': false,
+    'Inspector.enable': false,
+    'Database.enable': false,
+    'DOMStorage.enable': false,
+    'Network.canClearBrowserCache': false,
+    'Network.canClearBrowserCookies': false,
+
+}
+
+io.sockets.on('connection', function(socket){
+    socket.on('message', function(message) {
+        var messageObject = JSON.parse(message);
+        if (messageObject.method in cannedResponses) {
+            socket.send(JSON.stringify({id: messageObject.id, result: cannedResponses[messageObject.method]}));
+        }
+    });
+});
 
 var httpProxy = new HttpProxy();
 httpProxy.on('requestWillBeSent', function(data) {
